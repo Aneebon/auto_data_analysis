@@ -159,7 +159,7 @@ print(
 
 
 print(
-    "\n✅ Preprocessing completed"
+    "\n Preprocessing completed"
 )
 
 print("\n" + "=" * 60)
