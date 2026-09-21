@@ -1,17 +1,39 @@
+
 import os
+import re
 import itertools
 
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
-# ============================================================
-# GENERATE ALL CHARTS
-# ============================================================
+def safe_filename(value):
+    """
+    Convert a column name into a safe filename.
+    """
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value))
+
+
+def save_figure(fig, filename, generated_files):
+    fig.tight_layout()
+
+    fig.savefig(
+        filename,
+        dpi=150,
+        bbox_inches="tight"
+    )
+
+    plt.close(fig)
+
+    generated_files.append(filename)
+
+    print("Created:", filename)
+
 
 def generate_all_charts(df, output_dir):
     """
-    Generate automatic visualizations for the cleaned dataset.
+    Generate all meaningful/applicable visualizations
+    for the cleaned dataset.
 
     Parameters
     ----------
@@ -20,67 +42,44 @@ def generate_all_charts(df, output_dir):
 
     output_dir : str
         Folder where charts will be saved.
-    """
 
-    # --------------------------------------------------------
-    # CREATE OUTPUT DIRECTORY
-    # --------------------------------------------------------
+    Returns
+    -------
+    list
+        List of generated chart file paths.
+    """
 
     os.makedirs(
         output_dir,
         exist_ok=True
     )
 
-    print("\nDataset received by visualization engine!")
+    generated_files = []
 
     print("Rows:", len(df))
     print("Columns:", len(df.columns))
-
-
-    # ========================================================
-    # DETECT COLUMN TYPES
-    # ========================================================
 
     numeric_columns = df.select_dtypes(
         include="number"
     ).columns.tolist()
 
-
     categorical_columns = df.select_dtypes(
         include=["object", "category"]
     ).columns.tolist()
-
 
     datetime_columns = df.select_dtypes(
         include=["datetime"]
     ).columns.tolist()
 
 
-    print("\n==============================")
-    print("COLUMN TYPES")
-    print("==============================")
-
-
     print("\nNumeric columns:")
     print(numeric_columns)
-
 
     print("\nCategorical columns:")
     print(categorical_columns)
 
-
     print("\nDatetime columns:")
     print(datetime_columns)
-
-
-    # ========================================================
-    # 1. HISTOGRAMS
-    # ========================================================
-
-    print("\n==============================")
-    print("GENERATING HISTOGRAMS")
-    print("==============================")
-
 
     for column in numeric_columns:
 
@@ -89,65 +88,37 @@ def generate_all_charts(df, output_dir):
         if len(data) == 0:
             continue
 
-
-        plt.figure(
+        fig, ax = plt.subplots(
             figsize=(8, 5)
         )
 
-
-        plt.hist(
+        ax.hist(
             data,
             bins=20
         )
 
-
-        plt.title(
+        ax.set_title(
             f"Distribution of {column}"
         )
 
-
-        plt.xlabel(
+        ax.set_xlabel(
             column
         )
 
-
-        plt.ylabel(
+        ax.set_ylabel(
             "Frequency"
         )
 
-
-        plt.tight_layout()
-
-
         filename = os.path.join(
             output_dir,
-            f"histogram_{column}.png"
+            f"histogram_{safe_filename(column)}.png"
         )
 
-
-        plt.savefig(
+        save_figure(
+            fig,
             filename,
-            dpi=150,
-            bbox_inches="tight"
+            generated_files
         )
-
-
-        plt.close()
-
-
-        print(
-            "Created:",
-            filename
-        )
-
-
-    # ========================================================
-    # 2. BAR CHARTS
-    # ========================================================
-
-    print("\n==============================")
-    print("GENERATING BAR CHARTS")
-    print("==============================")
 
 
     for column in categorical_columns:
@@ -156,82 +127,49 @@ def generate_all_charts(df, output_dir):
             dropna=False
         )
 
-
-        # Avoid useless high-cardinality graphs
         if len(counts) == 0:
             continue
 
-
-        # If there are too many categories,
-        # display only top 20.
+        # Avoid extremely large bar charts
         if len(counts) > 20:
-
             counts = counts.head(20)
 
-
-        plt.figure(
+        fig, ax = plt.subplots(
             figsize=(10, 6)
         )
 
-
         counts.plot(
-            kind="bar"
+            kind="bar",
+            ax=ax
         )
 
-
-        plt.title(
+        ax.set_title(
             f"Count by {column}"
         )
 
-
-        plt.xlabel(
+        ax.set_xlabel(
             column
         )
 
-
-        plt.ylabel(
+        ax.set_ylabel(
             "Count"
         )
 
-
-        plt.xticks(
-            rotation=45,
-            ha="right"
+        ax.tick_params(
+            axis="x",
+            rotation=45
         )
-
-
-        plt.tight_layout()
-
 
         filename = os.path.join(
             output_dir,
-            f"bar_{column}.png"
+            f"bar_{safe_filename(column)}.png"
         )
 
-
-        plt.savefig(
+        save_figure(
+            fig,
             filename,
-            dpi=150,
-            bbox_inches="tight"
+            generated_files
         )
-
-
-        plt.close()
-
-
-        print(
-            "Created:",
-            filename
-        )
-
-
-    # ========================================================
-    # 3. PIE CHARTS
-    # ========================================================
-
-    print("\n==============================")
-    print("GENERATING PIE CHARTS")
-    print("==============================")
 
 
     for column in categorical_columns:
@@ -240,66 +178,37 @@ def generate_all_charts(df, output_dir):
             dropna=False
         )
 
-
-        # Pie charts only make sense
-        # for a small number of categories.
-
+        # Pie charts only for small category counts
         if len(counts) < 2:
             continue
-
 
         if len(counts) > 8:
             continue
 
-
-        plt.figure(
+        fig, ax = plt.subplots(
             figsize=(7, 7)
         )
 
-
-        plt.pie(
+        ax.pie(
             counts.values,
             labels=counts.index.astype(str),
             autopct="%1.1f%%"
         )
 
-
-        plt.title(
+        ax.set_title(
             f"Distribution of {column}"
         )
 
-
         filename = os.path.join(
             output_dir,
-            f"pie_{column}.png"
+            f"pie_{safe_filename(column)}.png"
         )
 
-
-        plt.savefig(
+        save_figure(
+            fig,
             filename,
-            dpi=150,
-            bbox_inches="tight"
+            generated_files
         )
-
-
-        plt.close()
-
-
-        print(
-            "Created:",
-            filename
-        )
-
-
-    # ========================================================
-    # 4. SCATTER PLOTS
-    #
-    # EVERY NUMERIC COLUMN AGAINST EVERY OTHER
-    # ========================================================
-
-    print("\n==============================")
-    print("GENERATING SCATTER PLOTS")
-    print("==============================")
 
 
     numeric_pairs = itertools.combinations(
@@ -307,77 +216,47 @@ def generate_all_charts(df, output_dir):
         2
     )
 
-
     for x, y in numeric_pairs:
 
         data = df[
             [x, y]
         ].dropna()
 
-
         if len(data) == 0:
             continue
 
-
-        plt.figure(
+        fig, ax = plt.subplots(
             figsize=(8, 5)
         )
 
-
-        plt.scatter(
+        ax.scatter(
             data[x],
             data[y],
             alpha=0.5
         )
 
-
-        plt.title(
+        ax.set_title(
             f"{x} vs {y}"
         )
 
-
-        plt.xlabel(
+        ax.set_xlabel(
             x
         )
 
-
-        plt.ylabel(
+        ax.set_ylabel(
             y
         )
 
-
-        plt.tight_layout()
-
-
         filename = os.path.join(
             output_dir,
-            f"scatter_{x}_vs_{y}.png"
+            f"scatter_{safe_filename(x)}_vs_{safe_filename(y)}.png"
         )
 
-
-        plt.savefig(
+        save_figure(
+            fig,
             filename,
-            dpi=150,
-            bbox_inches="tight"
+            generated_files
         )
-
-
-        plt.close()
-
-
-        print(
-            "Created:",
-            filename
-        )
-
-
-    # ========================================================
-    # 5. CORRELATION HEATMAP
-    # ========================================================
-
-    print("\n==============================")
-    print("GENERATING CORRELATION HEATMAP")
-    print("==============================")
 
 
     if len(numeric_columns) >= 2:
@@ -386,82 +265,59 @@ def generate_all_charts(df, output_dir):
             numeric_columns
         ].corr()
 
-
-        plt.figure(
+        fig, ax = plt.subplots(
             figsize=(10, 8)
         )
 
-
-        plt.imshow(
+        image = ax.imshow(
             correlation,
             interpolation="nearest"
         )
 
+        fig.colorbar(
+            image,
+            ax=ax
+        )
 
-        plt.colorbar()
+        ax.set_xticks(
+            range(len(numeric_columns))
+        )
 
-
-        plt.xticks(
-            range(len(numeric_columns)),
+        ax.set_xticklabels(
             numeric_columns,
             rotation=45,
             ha="right"
         )
 
+        ax.set_yticks(
+            range(len(numeric_columns))
+        )
 
-        plt.yticks(
-            range(len(numeric_columns)),
+        ax.set_yticklabels(
             numeric_columns
         )
 
-
-        plt.title(
+        ax.set_title(
             "Correlation Heatmap"
         )
-
-
-        plt.tight_layout()
-
 
         filename = os.path.join(
             output_dir,
             "correlation_heatmap.png"
         )
 
-
-        plt.savefig(
+        save_figure(
+            fig,
             filename,
-            dpi=150,
-            bbox_inches="tight"
+            generated_files
         )
-
-
-        plt.close()
-
-
-        print(
-            "Created:",
-            filename
-        )
-
-
-    # ========================================================
-    # 6. BOX PLOTS
-    #
-    # CATEGORICAL vs NUMERIC
-    # ========================================================
-
-    print("\n==============================")
-    print("GENERATING BOX PLOTS")
-    print("==============================")
 
 
     for category in categorical_columns:
 
-        # Skip high-cardinality columns
+        # Avoid useless high-cardinality plots
         if df[category].nunique() > 15:
             continue
-
 
         for numeric in numeric_columns:
 
@@ -469,87 +325,55 @@ def generate_all_charts(df, output_dir):
                 [category, numeric]
             ].dropna()
 
-
             if len(data) == 0:
                 continue
 
-
-            plt.figure(
+            fig, ax = plt.subplots(
                 figsize=(10, 6)
             )
 
-
             data.boxplot(
                 column=numeric,
-                by=category
+                by=category,
+                ax=ax
             )
 
-
-            plt.title(
+            ax.set_title(
                 f"{numeric} by {category}"
             )
 
-
-            plt.suptitle("")
-
-
-            plt.xlabel(
+            ax.set_xlabel(
                 category
             )
 
-
-            plt.ylabel(
+            ax.set_ylabel(
                 numeric
             )
 
-
-            plt.xticks(
-                rotation=45,
-                ha="right"
+            ax.tick_params(
+                axis="x",
+                rotation=45
             )
 
-
-            plt.tight_layout()
-
+            # Remove pandas automatic subtitle
+            fig.suptitle("")
 
             filename = os.path.join(
                 output_dir,
-                f"box_{numeric}_by_{category}.png"
+                f"box_{safe_filename(numeric)}_by_{safe_filename(category)}.png"
             )
 
-
-            plt.savefig(
+            save_figure(
+                fig,
                 filename,
-                dpi=150,
-                bbox_inches="tight"
+                generated_files
             )
-
-
-            plt.close()
-
-
-            print(
-                "Created:",
-                filename
-            )
-
-
-    # ========================================================
-    # 7. MEAN BAR CHARTS
-    #
-    # CATEGORICAL vs NUMERIC
-    # ========================================================
-
-    print("\n==============================")
-    print("GENERATING GROUPED MEAN CHARTS")
-    print("==============================")
 
 
     for category in categorical_columns:
 
         if df[category].nunique() > 15:
             continue
-
 
         for numeric in numeric_columns:
 
@@ -562,76 +386,45 @@ def generate_all_charts(df, output_dir):
                 )
             )
 
-
             if len(grouped) == 0:
                 continue
 
-
-            plt.figure(
+            fig, ax = plt.subplots(
                 figsize=(10, 6)
             )
 
-
             grouped.plot(
-                kind="bar"
+                kind="bar",
+                ax=ax
             )
 
-
-            plt.title(
+            ax.set_title(
                 f"Average {numeric} by {category}"
             )
 
-
-            plt.xlabel(
+            ax.set_xlabel(
                 category
             )
 
-
-            plt.ylabel(
+            ax.set_ylabel(
                 f"Average {numeric}"
             )
 
-
-            plt.xticks(
-                rotation=45,
-                ha="right"
+            ax.tick_params(
+                axis="x",
+                rotation=45
             )
-
-
-            plt.tight_layout()
-
 
             filename = os.path.join(
                 output_dir,
-                f"mean_{numeric}_by_{category}.png"
+                f"mean_{safe_filename(numeric)}_by_{safe_filename(category)}.png"
             )
 
-
-            plt.savefig(
+            save_figure(
+                fig,
                 filename,
-                dpi=150,
-                bbox_inches="tight"
+                generated_files
             )
-
-
-            plt.close()
-
-
-            print(
-                "Created:",
-                filename
-            )
-
-
-    # ========================================================
-    # 8. CATEGORICAL vs CATEGORICAL
-    #
-    # CROSS-TAB HEATMAP
-    # ========================================================
-
-    print("\n==============================")
-    print("GENERATING CATEGORICAL HEATMAPS")
-    print("==============================")
 
 
     categorical_pairs = itertools.combinations(
@@ -639,109 +432,157 @@ def generate_all_charts(df, output_dir):
         2
     )
 
-
     for x, y in categorical_pairs:
 
+        # Avoid huge heatmaps
         if df[x].nunique() > 15:
             continue
 
-
         if df[y].nunique() > 15:
             continue
-
 
         table = pd.crosstab(
             df[x],
             df[y]
         )
 
-
         if table.empty:
             continue
 
-
-        plt.figure(
+        fig, ax = plt.subplots(
             figsize=(10, 7)
         )
 
-
-        plt.imshow(
+        image = ax.imshow(
             table,
             aspect="auto"
         )
 
+        fig.colorbar(
+            image,
+            ax=ax
+        )
 
-        plt.colorbar()
+        ax.set_xticks(
+            range(len(table.columns))
+        )
 
-
-        plt.xticks(
-            range(len(table.columns)),
+        ax.set_xticklabels(
             table.columns.astype(str),
             rotation=45,
             ha="right"
         )
 
+        ax.set_yticks(
+            range(len(table.index))
+        )
 
-        plt.yticks(
-            range(len(table.index)),
+        ax.set_yticklabels(
             table.index.astype(str)
         )
 
-
-        plt.xlabel(
+        ax.set_xlabel(
             y
         )
 
-
-        plt.ylabel(
+        ax.set_ylabel(
             x
         )
 
-
-        plt.title(
+        ax.set_title(
             f"{x} vs {y}"
         )
 
-
-        plt.tight_layout()
-
-
         filename = os.path.join(
             output_dir,
-            f"categorical_{x}_vs_{y}.png"
+            f"categorical_{safe_filename(x)}_vs_{safe_filename(y)}.png"
         )
 
-
-        plt.savefig(
+        save_figure(
+            fig,
             filename,
-            dpi=150,
-            bbox_inches="tight"
+            generated_files
         )
 
 
-        plt.close()
+    for date_column in datetime_columns:
+
+        for numeric_column in numeric_columns:
+
+            data = df[
+                [date_column, numeric_column]
+            ].dropna()
+
+            if len(data) == 0:
+                continue
+
+            # Sort chronologically
+            data = data.sort_values(
+                by=date_column
+            )
+
+            # If there are huge numbers of timestamp observations,
+            # aggregate them by day to make the chart readable.
+            if data[date_column].nunique() > 1000:
+
+                data = (
+                    data
+                    .set_index(date_column)
+                    [numeric_column]
+                    .resample("D")
+                    .mean()
+                    .dropna()
+                    .reset_index()
+                )
+
+            fig, ax = plt.subplots(
+                figsize=(10, 5)
+            )
+
+            ax.plot(
+                data[date_column],
+                data[numeric_column]
+            )
+
+            ax.set_title(
+                f"{numeric_column} over {date_column}"
+            )
+
+            ax.set_xlabel(
+                date_column
+            )
+
+            ax.set_ylabel(
+                numeric_column
+            )
+
+            ax.tick_params(
+                axis="x",
+                rotation=45
+            )
+
+            filename = os.path.join(
+                output_dir,
+                f"line_{safe_filename(date_column)}_vs_{safe_filename(numeric_column)}.png"
+            )
+
+            save_figure(
+                fig,
+                filename,
+                generated_files
+            )
 
 
-        print(
-            "Created:",
-            filename
-        )
-
-
-    # ========================================================
-    # COMPLETE
-    # ========================================================
-
-    print("\n==============================")
-    print("CHART GENERATION COMPLETE")
-    print("==============================")
-
+    print(
+        f"\nTotal charts generated: {len(generated_files)}"
+    )
 
     print(
         "\nAll generated charts are stored in:"
     )
 
-
     print(
         output_dir
     )
+
+    return generated_files

@@ -8,11 +8,11 @@ from visualization.charts import generate_all_charts
 
 st.set_page_config(
     page_title="AI Data Analytics",
-    page_icon="📊",
+    page_icon="",
     layout="wide"
 )
 
-st.title("📊 AI Data Analytics")
+st.title("AI Data Analytics")
 
 st.write(
     "Upload a dataset and let the system "
@@ -49,11 +49,11 @@ except Exception as e:
 
 
 st.success(
-    "Dataset loaded successfully! ✅"
+    "Dataset loaded successfully! "
 )
 
 st.header(
-    "📋 Dataset Overview"
+    "Dataset Overview"
 )
 
 
@@ -96,7 +96,7 @@ st.dataframe(
 )
 
 st.header(
-    "🔍 Data Profiling"
+    "Data Profiling"
 )
 
 
@@ -144,7 +144,7 @@ with col2:
     )
 
 st.header(
-    "🧹 Data Preprocessing"
+    "Data Preprocessing"
 )
 
 
@@ -177,7 +177,7 @@ if st.button(
             )
 
             st.success(
-                "Preprocessing completed successfully! ✅"
+                "Preprocessing completed successfully!"
             )
 
         except Exception as e:
@@ -254,7 +254,7 @@ st.dataframe(
 )
 
 st.subheader(
-    "⬇️ Download Cleaned Dataset"
+    "Download Cleaned Dataset"
 )
 
 
@@ -273,7 +273,7 @@ st.download_button(
 )
 
 st.header(
-    "📊 Automatic Data Visualization"
+    "Automatic Data Visualization"
 )
 
 
@@ -339,7 +339,7 @@ if st.button(
 
             st.success(
                 f"Successfully generated "
-                f"{len(generated_files)} charts! 🎉"
+                f"{len(generated_files)} charts!"
             )
 
         except Exception as e:
@@ -361,7 +361,7 @@ if "generated_files" in st.session_state:
 
 
     st.subheader(
-        f"📈 Generated Visualizations "
+        f"Generated Visualizations "
         f"({len(generated_files)})"
     )
 
@@ -406,5 +406,5 @@ if "generated_files" in st.session_state:
 
 
 st.success(
-    "Analysis complete! 🚀"
+    "Analysis complete!"
 )
